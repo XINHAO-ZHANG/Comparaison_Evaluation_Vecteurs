@@ -1,3 +1,4 @@
+import csv
 import numpy as np
 import nltk
 from nltk.tokenize import word_tokenize
@@ -63,7 +64,7 @@ def ppmi_matrix(co_occurrence, epsilon=1e-8):
     return ppmi
 
 # chemin du fichier texte
-file_path = './Comparaison_Evaluation_Vecteurs/corpus/pride_and_prejudice.txt'
+file_path = './corpus/pride_and_prejudice.txt'
 
 # Prétraitement du texte
 tokens = preprocess_text(file_path)
@@ -110,23 +111,28 @@ ppmi_normalized_tsne = normalize(ppmi_reduced_tsne, norm='l2', axis=1)
 target_words = ['sister', 'time', 'much', 'little', 'good', 'nothing', 'family', 'man', 'dear', 'great', 'mother', 'father', 'day', 'young', 'last', 'letter', 'room', 'friend', 'first', 'way', 'house', 'sure', 'manner', 'pleasure', 'aunt']
 k = 10  
 
-# Trouver les k plus proches voisins pour chaque mot-cible
-for word in target_words:
-    word_index = vocab.index(word)
-    word_vector_pca = ppmi_normalized_pca[word_index].reshape(1, -1)
-    word_vector_tsne = ppmi_normalized_tsne[word_index].reshape(1, -1)
+with open('./résultats/méthodeB_réduction_dimensionalité.csv', 'w', encoding='utf-8') as file:
+    csv_writer = csv.writer(file)
     
-    # Calculer la similarité cosinus avec tous les autres vecteurs
-    cos_similarity_pca = cosine_similarity(word_vector_pca, ppmi_normalized_pca)
-    cos_similarity_tsne = cosine_similarity(word_vector_tsne, ppmi_normalized_tsne)
+    csv_writer.writerow(['PCA', 'word voisins'])  # En-tête du CSV pour PCA
     
-    # Obtenir les indices des k plus proches voisins (en excluant le mot-cible lui-même)
-    neighbors_indices_pca = cos_similarity_pca.argsort()[0][-k-1:-1][::-1]
-    neighbors_indices_tsne = cos_similarity_tsne.argsort()[0][-k-1:-1][::-1]
+    for word in target_words:
+        word_index = vocab.index(word)
+        word_vector_pca = ppmi_normalized_pca[word_index].reshape(1, -1)
+        cos_similarity_pca = cosine_similarity(word_vector_pca, ppmi_normalized_pca)
+        neighbors_indices_pca = cos_similarity_pca.argsort()[0][-k-1:-1][::-1]
+        neighbors_pca = [vocab[idx] for idx in neighbors_indices_pca]
+        csv_writer.writerow([word, neighbors_pca])  # Écrire les données dans le CSV
     
-    # Extraire les mots voisins correspondants
-    neighbors_pca = [vocab[idx] for idx in neighbors_indices_pca]
-    neighbors_tsne = [vocab[idx] for idx in neighbors_indices_tsne]
+    csv_writer.writerow(['t-SNE', 'word voisins'])  # En-tête du CSV pour t-SNE
+    
+    for word in target_words:
+        word_index = vocab.index(word)
+        word_vector_tsne = ppmi_normalized_tsne[word_index].reshape(1, -1)
+        cos_similarity_tsne = cosine_similarity(word_vector_tsne, ppmi_normalized_tsne)
+        neighbors_indices_tsne = cos_similarity_tsne.argsort()[0][-k-1:-1][::-1]
+        neighbors_tsne = [vocab[idx] for idx in neighbors_indices_tsne]
+        csv_writer.writerow([word, neighbors_tsne])  # Écrire les données dans le CSV
     
     print(f"{word}: {neighbors_pca}")
     print(f"{word}: {neighbors_tsne}")

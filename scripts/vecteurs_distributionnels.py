@@ -1,3 +1,4 @@
+import csv
 import numpy as np
 import nltk
 from nltk.tokenize import word_tokenize
@@ -63,7 +64,7 @@ def ppmi_matrix(co_occurrence, epsilon=1e-8):
 
 
 # Chemin vers le fichier corpus
-file_path = './Comparaison_Evaluation_Vecteurs/corpus/pride_and_prejudice.txt'
+file_path = './corpus/pride_and_prejudice.txt'
 
 # Prétraitement du texte
 tokens = preprocess_text(file_path)
@@ -88,18 +89,21 @@ ppmi_normalized = normalize(ppmi, norm='l2', axis=1)
 target_words = ['sister', 'time', 'much', 'little', 'good', 'nothing', 'family', 'man', 'dear', 'great', 'mother', 'father', 'day', 'young', 'last', 'letter', 'room', 'friend', 'first', 'way', 'house', 'sure', 'manner', 'pleasure', 'aunt']
 k = 10  
 
-# Trouver les k plus proches voisins pour chaque mot-cible
-for word in target_words:
-    word_index = vocab.index(word)
-    word_vector = ppmi_normalized[word_index].reshape(1, -1)
-    
-    # Calculer la similarité cosinus avec tous les autres vecteurs
-    cos_similarity = cosine_similarity(word_vector, ppmi_normalized)
-    
-    # Obtenir les indices des k plus proches voisins (en excluant le mot-cible lui-même)
-    neighbors_indices = cos_similarity.argsort()[0][-k-1:-1][::-1]
-    
-    # Extraire les mots voisins correspondants
-    neighbors = [vocab[idx] for idx in neighbors_indices]
-    
-    print(f"{word}: {neighbors}")
+# Path where the CSV file will be saved
+csv_file_path = './résultats/vecteurs_distributionnels.csv'
+# Open the CSV file in write mode
+with open(csv_file_path, 'w', newline='', encoding='utf-8') as csvfile:
+    csv_writer = csv.writer(csvfile)
+    # Write the header
+    csv_writer.writerow(['Target Word', 'Neighbors'])
+
+    # Write neighbors for each target word
+    for word in target_words:
+        if word in vocab:
+            word_index = vocab.index(word)
+            word_vector = ppmi_normalized[word_index].reshape(1, -1)
+            cos_similarity = cosine_similarity(word_vector, ppmi_normalized)
+            neighbors_indices = cos_similarity.argsort()[0][-k-1:-1][::-1]
+            neighbors = [vocab[idx] for idx in neighbors_indices]
+            csv_writer.writerow([word, ', '.join(neighbors)])
+
